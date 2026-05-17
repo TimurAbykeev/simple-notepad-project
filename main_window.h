@@ -28,6 +28,7 @@ private:
     void setup_format_toolbar();
     void setup_search_menu();
     void setup_tools_menu();
+    void setup_view_menu();
     void update_status_bar();
 
     void open_file();
@@ -51,6 +52,7 @@ private:
     QTextEdit* editor { nullptr };
     QString current_file;
     std::vector<std::unique_ptr<text_transform>> transforms;
+    int zoom_level_ { 0 };
 
     QDialog* find_replace_dlg { nullptr };
     std::unique_ptr<Ui::find_replace_dialog> find_replace_ui;

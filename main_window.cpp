@@ -48,6 +48,7 @@ main_window::main_window()
     setup_format_toolbar();
     setup_search_menu();
     setup_tools_menu();
+    setup_view_menu();
 
     update_status_bar();
 }
@@ -481,4 +482,39 @@ void main_window::choose_font()
     QTextCharFormat fmt;
     fmt.setFont(font);
     editor->mergeCurrentCharFormat(fmt);
+}
+
+// Zoom
+// QTextEdit has built-in zoomIn(n) and zoomOut(n) methods that shift the font size by n points.
+// zoom_level_ tracks the cumulative offset from the base size so that Reset Zoom can apply
+// the exact inverse: if zoom_level_ > 0 call zoomOut(zoom_level_), if < 0 call zoomIn(-zoom_level_).
+void main_window::setup_view_menu()
+{
+    auto* view_menu = menuBar()->addMenu("View");
+
+    auto* action_zoom_in = view_menu->addAction("Zoom In");
+    // Ctrl++ requires Shift on most keyboards; Ctrl+= covers the same physical key without Shift
+    action_zoom_in->setShortcuts({ QKeySequence("Ctrl++"), QKeySequence("Ctrl+=") });
+    connect(action_zoom_in, &QAction::triggered, this, [this] {
+        editor->zoomIn(1);
+        zoom_level_++;
+    });
+
+    auto* action_zoom_out = view_menu->addAction("Zoom Out");
+    action_zoom_out->setShortcut(QKeySequence("Ctrl+-"));
+    connect(action_zoom_out, &QAction::triggered, this, [this] {
+        editor->zoomOut(1);
+        zoom_level_--;
+    });
+
+    auto* action_reset_zoom = view_menu->addAction("Reset Zoom");
+    action_reset_zoom->setShortcut(QKeySequence("Ctrl+0"));
+    connect(action_reset_zoom, &QAction::triggered, this, [this] {
+        if (zoom_level_ > 0) {
+            editor->zoomOut(zoom_level_);
+        } else if (zoom_level_ < 0) {
+            editor->zoomIn(-zoom_level_);
+        }
+        zoom_level_ = 0;
+    });
 }
