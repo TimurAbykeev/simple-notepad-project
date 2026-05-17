@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFont>
+#include <QFontDialog>
 #include <QHeaderView>
 #include <QKeySequence>
 #include <QMenuBar>
@@ -135,6 +136,14 @@ void main_window::setup_format_menu()
 {
     auto* format_menu = menuBar()->addMenu("Format");
 
+    // Opens a system font picker dialog; applies the chosen font to the current selection
+    const auto* action_font = format_menu->addAction("Font...");
+    connect(action_font, &QAction::triggered, this, [this] {
+        choose_font();
+    });
+
+    format_menu->addSeparator();
+
     auto* text_case_menu = format_menu->addMenu("Text Case");
 
     for (const auto& transform : transforms) {
@@ -211,7 +220,6 @@ void main_window::setup_tools_menu()
 // blockNumber() returns the zero-based paragraph index (line), columnNumber() the zero-based column.
 // Both are incremented by 1 for display. The cursorPositionChanged signal in setup_edit_menu
 // ensures this updates on every cursor movement.
-
 void main_window::update_status_bar()
 {
     const QString text = editor->toPlainText();
@@ -456,4 +464,21 @@ void main_window::show_word_frequency()
     ui.frequency_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
 
     dialog->exec();
+}
+
+// Font dialog
+// QFontDialog::getFont() opens the system font picker pre-populated with the editor's current font.
+// The ok flag is false if the user cancels — in that case nothing is changed.
+// mergeCurrentCharFormat() applies the font to the current selection, or to newly typed text
+// at the cursor position if nothing is selected.
+void main_window::choose_font()
+{
+    bool ok = false;
+    const QFont font = QFontDialog::getFont(&ok, editor->currentFont(), this, "Font");
+    if (!ok) {
+        return;
+    }
+    QTextCharFormat fmt;
+    fmt.setFont(font);
+    editor->mergeCurrentCharFormat(fmt);
 }

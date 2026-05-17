@@ -12,8 +12,8 @@
 #include <vector>
 
 namespace Ui {
-class find_replace_dialog;
-class word_frequency_dialog;
+    class find_replace_dialog;
+    class word_frequency_dialog;
 }
 
 class main_window : public QMainWindow {
@@ -45,6 +45,8 @@ private:
         QTextDocument::FindFlags flags = QTextDocument::FindFlags()) const;
 
     void show_word_frequency();
+
+    void choose_font();
 
     QTextEdit* editor { nullptr };
     QString current_file;
