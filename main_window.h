@@ -48,6 +48,7 @@ private:
     void show_word_frequency();
 
     void choose_font();
+    void choose_text_color();
 
     QTextEdit* editor { nullptr };
     QString current_file;

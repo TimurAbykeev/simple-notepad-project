@@ -6,6 +6,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QColorDialog>
 #include <QFile>
 #include <QFileDialog>
 #include <QFont>
@@ -141,6 +142,12 @@ void main_window::setup_format_menu()
     const auto* action_font = format_menu->addAction("Font...");
     connect(action_font, &QAction::triggered, this, [this] {
         choose_font();
+    });
+
+    // Opens a color picker dialog; applies the chosen color to the current selection
+    const auto* action_color = format_menu->addAction("Text Color...");
+    connect(action_color, &QAction::triggered, this, [this] {
+        choose_text_color();
     });
 
     format_menu->addSeparator();
@@ -517,4 +524,20 @@ void main_window::setup_view_menu()
         }
         zoom_level_ = 0;
     });
+}
+
+// Color picker
+// QColorDialog::getColor() opens the system color picker pre-populated with the editor's current text color.
+// isValid() returns false if the user cancels — in that case nothing is changed.
+// setForeground() applies the chosen color to the current selection via QTextCharFormat,
+// exactly the same pattern as Font dialog and Bold/Italic/Underline.
+void main_window::choose_text_color()
+{
+    const QColor color = QColorDialog::getColor(editor->textColor(), this, "Text Color");
+    if (!color.isValid()) {
+        return;
+    }
+    QTextCharFormat fmt;
+    fmt.setForeground(color);
+    editor->mergeCurrentCharFormat(fmt);
 }
