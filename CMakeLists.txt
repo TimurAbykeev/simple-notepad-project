@@ -8,23 +8,21 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 qt_standard_project_setup()
 
 qt_add_executable(
-    notepad
-    main.cpp
-    main_window.h
-    main_window.cpp
-    text_transform.h
-    notepad_exception.h
-    find_replace_dialog.ui
-    word_frequency_dialog.ui
+        notepad
+        main.cpp
+        main_window.h
+        main_window.cpp
+        text_transform.h
+        notepad_exception.h
+        spell_checker.h
+        spell_checker_highlighter.h
+        find_replace_dialog.ui
+        word_frequency_dialog.ui
 )
 target_link_libraries(notepad PRIVATE Qt6::Widgets)
 
 add_executable(
-    test_exceptions
-    test_exceptions.cpp
-    notepad_exception.h
+        test_exceptions
+        test_exceptions.cpp
+        notepad_exception.h
 )
-
-add_custom_command(TARGET notepad POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:notepad>/data)

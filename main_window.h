@@ -1,6 +1,8 @@
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
+#include "spell_checker.h"
+#include "spell_checker_highlighter.h"
 #include "text_transform.h"
 
 #include <QDialog>
@@ -12,8 +14,8 @@
 #include <vector>
 
 namespace Ui {
-    class find_replace_dialog;
-    class word_frequency_dialog;
+class find_replace_dialog;
+class word_frequency_dialog;
 }
 
 class main_window : public QMainWindow {
@@ -50,6 +52,9 @@ private:
     void choose_font();
     void choose_text_color();
 
+    // Shows a context menu with spelling suggestions when right-clicking a misspelled word
+    void show_spell_suggestions(const QPoint& pos);
+
     QTextEdit* editor { nullptr };
     QString current_file;
     std::vector<std::unique_ptr<text_transform>> transforms;
@@ -57,6 +62,10 @@ private:
 
     QDialog* find_replace_dlg { nullptr };
     std::unique_ptr<Ui::find_replace_dialog> find_replace_ui;
+
+    // Spell checker: loaded once at startup, shared with the highlighter
+    std::unique_ptr<spell_checker> checker_;
+    std::unique_ptr<spell_checker_highlighter> highlighter_;
 };
 
 #endif // MAIN_WINDOW_H

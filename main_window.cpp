@@ -13,6 +13,7 @@
 #include <QFontDialog>
 #include <QHeaderView>
 #include <QKeySequence>
+#include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QRegularExpression>
@@ -36,6 +37,16 @@ main_window::main_window()
 
     editor = new QTextEdit(this);
     setCentralWidget(editor);
+
+    // Load the word list once at startup; share the checker with the highlighter
+    checker_ = std::make_unique<spell_checker>("data/words.txt");
+    highlighter_ = std::make_unique<spell_checker_highlighter>(checker_.get(), editor->document());
+
+    // Enable right-click context menu for spelling suggestions
+    editor->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(editor, &QTextEdit::customContextMenuRequested, this, [this](const QPoint& pos) {
+        show_spell_suggestions(pos);
+    });
 
     transforms.push_back(std::make_unique<uppercase_transform>());
     transforms.push_back(std::make_unique<lowercase_transform>());
@@ -220,6 +231,12 @@ void main_window::setup_tools_menu()
     const auto* action_word_freq = tools_menu->addAction("Word Frequency...");
     connect(action_word_freq, &QAction::triggered, this, [this] {
         show_word_frequency();
+    });
+
+    // Re-runs the spell check highlight pass over the whole document
+    const auto* action_spell = tools_menu->addAction("Check Spelling...");
+    connect(action_spell, &QAction::triggered, this, [this] {
+        highlighter_->rehighlight();
     });
 }
 
@@ -540,4 +557,49 @@ void main_window::choose_text_color()
     QTextCharFormat fmt;
     fmt.setForeground(color);
     editor->mergeCurrentCharFormat(fmt);
+}
+
+// Spell checker context menu
+// When the user right-clicks, we check if the word under the cursor is misspelled.
+// If it is, we show a QMenu with up to 5 suggestions at the top, followed by the
+// standard editor context menu (cut, copy, paste etc.) below a separator.
+// Clicking a suggestion selects the whole word and replaces it.
+void main_window::show_spell_suggestions(const QPoint& pos)
+{
+    // Move the cursor to the click position and select the word under it
+    QTextCursor cursor = editor->cursorForPosition(pos);
+    cursor.select(QTextCursor::WordUnderCursor);
+    const QString word = cursor.selectedText();
+
+    // Build the context menu starting with the standard one
+    QMenu* menu = editor->createStandardContextMenu();
+
+    if (!word.isEmpty() && !checker_->is_correct(word)) {
+        const auto suggestions = checker_->suggestions(word);
+
+        // Insert suggestions at the top of the menu, above everything else
+        QAction* first_action = menu->actions().isEmpty() ? nullptr : menu->actions().first();
+
+        if (suggestions.empty()) {
+            auto* no_suggestions = new QAction("(No suggestions)", menu);
+            no_suggestions->setEnabled(false);
+            menu->insertAction(first_action, no_suggestions);
+        } else {
+            for (auto it = suggestions.rbegin(); it != suggestions.rend(); ++it) {
+                const QString suggestion = *it;
+                auto* action = new QAction(suggestion, menu);
+                // Replace the misspelled word with the chosen suggestion
+                connect(action, &QAction::triggered, this, [this, cursor, suggestion]() mutable {
+                    cursor.insertText(suggestion);
+                });
+                menu->insertAction(first_action, action);
+            }
+        }
+
+        // Separator between suggestions and standard menu items
+        menu->insertSeparator(first_action);
+    }
+
+    menu->exec(editor->mapToGlobal(pos));
+    delete menu;
 }
